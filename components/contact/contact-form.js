@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 
 import classes from "./contact-form.module.css";
-// import Notification from "../ui/notification";
+import Notification from "../ui/notification";
 
 async function sendContactData(contactDetails) {
   const response = await fetch("/api/contact", {
@@ -127,13 +127,13 @@ function ContactForm() {
           <button>Send Message</button>
         </div>
       </form>
-      {/* {notification && (
+      {notification && (
         <Notification
           status={notification.status}
           title={notification.title}
           message={notification.message}
         />
-      )} */}
+      )}
     </section>
   );
 }

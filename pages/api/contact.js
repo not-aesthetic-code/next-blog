@@ -1,4 +1,6 @@
-export default function handler(req, res) {
+import { MongoClient } from "mongodb";
+
+export default async function handler(req, res) {
   if (req.method === "POST") {
     const { email, name, message } = req.body;
 
@@ -6,22 +8,60 @@ export default function handler(req, res) {
       !email ||
       !email.includes("@") ||
       !name ||
-      !name.trim() === "" ||
+      name.trim() === "" ||
       !message ||
-      !name.message() === ""
+      message.trim() === ""
     ) {
-      res.status(422).json({ message: "Invalid input " });
+      res.status(422).json({ message: "Invalid input." });
       return;
     }
 
-    // store it in db
+    const newMessage = {
+      email,
+      name,
+      message,
+    };
 
-    const newMessage = { email, name, message };
+    let client;
 
-    console.log("mesg", newMessage);
+    try {
+      client = await connectDb();
+      console.log("client?", { client });
+    } catch (error) {
+      res.status(500).json({ message: "Could not connect to database." });
+      return;
+    }
+
+    // get rid off this, and dockerize it with own mongodb instance
+
+    const db = client.db();
+
+    try {
+      const result = await db.collection("messages").insertOne(newMessage);
+      newMessage.id = result.insertedId;
+    } catch (error) {
+      client.close();
+      res.status(500).json({ message: "Storing message failed!" });
+      return;
+    }
+
+    client.close();
 
     res
       .status(201)
-      .json({ message: "Sucessfully stored message!", newMessage });
+      .json({ message: "Successfully stored message!", message: newMessage });
   }
+}
+
+export async function connectDb() {
+  const connectionString = `mongodb+srv://${process.env.mongodb_username}:${process.env.mongodb_password}@${process.env.mongodb_clustername}.kfnbb.mongodb.net/${process.env.mongodb_database}?retryWrites=true&w=majority`;
+
+  const client = await MongoClient.connect(connectionString, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  });
+
+  console.log("do we have client?", client);
+
+  return client;
 }
